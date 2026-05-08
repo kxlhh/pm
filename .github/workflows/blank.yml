@@ -1,0 +1,78 @@
+name: Build ESP32-S3 Linux Image
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: jcmvbkbc/esp32-linux-build
+          path: esp32-linux-build
+          submodules: 'recursive'
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake bash bc bison build-essential cmake flex gawk git \
+            gperf help2man libncurses-dev libtool libtool-bin libusb-1.0-0 \
+            python3 python3-venv rsync texinfo unzip wget
+      
+      - name: Build for ESP32-S3 (default - 8MB config)
+        run: |
+          cd esp32-linux-build
+          chmod +x rebuild-esp32s3-linux-wifi.sh
+          ./rebuild-esp32s3-linux-wifi.sh
+      
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32s3-linux-default
+          path: |
+            esp32-linux-build/output/*.bin
+            esp32-linux-build/output/*.elf
+            esp32-linux-build/output/*.map
+
+  # 可选：同时编译 Box-3 配置（16MB Flash + 16MB PSRAM）
+  build-box3:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: jcmvbkbc/esp32-linux-build
+          path: esp32-linux-build
+          submodules: 'recursive'
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake bash bc bison build-essential cmake flex gawk git \
+            gperf help2man libncurses-dev libtool libtool-bin libusb-1.0-0 \
+            python3 python3-venv rsync texinfo unzip wget
+      
+      - name: Build for ESP32-S3 Box-3 (16MB config)
+        run: |
+          cd esp32-linux-build
+          chmod +x rebuild-esp32s3-linux-wifi.sh
+          ./rebuild-esp32s3-linux-wifi.sh -c box3.conf
+      
+      - name: Upload Box-3 firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32s3-linux-box3
+          path: |
+            esp32-linux-build/output/*.bin
+            esp32-linux-build/output/*.elf
+            esp32-linux-build/output/*.map
